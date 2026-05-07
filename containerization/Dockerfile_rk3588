@@ -1,0 +1,48 @@
+FROM python:3.10-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    LD_LIBRARY_PATH=/usr/lib:$LD_LIBRARY_PATH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    libxkbcommon0 \
+    libxcb1 \
+    cmake \
+    git \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip setuptools wheel
+
+RUN pip install rknn-toolkit-lite2
+
+WORKDIR /app
+
+COPY ../requirements.txt .
+
+ARG INSTALL_TORCH=1
+
+RUN if [ "${INSTALL_TORCH}" = "1" ]; then \
+        pip install torch torchvision; \
+    fi
+
+# ОСТАВЛЕНО:
+# остальные зависимости
+RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
+        grep -vE '^(torch|torchvision)[=<>]' requirements.txt > /tmp/req.txt && \
+        pip install --no-cache-dir -r /tmp/req.txt; \
+    else \
+        pip install --no-cache-dir -r requirements.txt; \
+    fi
+
+COPY ../. .
+
+EXPOSE 8000
+
+# CMD ["uvicorn", "fire_uav.api.main_rest:app", "--host", "0.0.0.0", "--port", "8000"]

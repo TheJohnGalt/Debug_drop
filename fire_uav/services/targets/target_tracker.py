@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import StrEnum
+# костыль, так как jetson не работает с python 3.11
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
 from typing import Iterable
 
 from fire_uav.module_core.geometry import haversine_m

@@ -239,6 +239,7 @@ async def _run() -> None:
     watchdog = asyncio.create_task(_watchdog_loop(cfg))
 
     await adapter.start(telemetry_consumer)
+    
     log.info("UAV adapter started (%s)", adapter.__class__.__name__)
 
     try:

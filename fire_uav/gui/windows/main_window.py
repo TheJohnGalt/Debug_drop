@@ -13,7 +13,13 @@ from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime
-from enum import StrEnum
+# костыль, так как jetson не работает с python 3.11
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
 from typing import Callable, Final
 
 import cv2

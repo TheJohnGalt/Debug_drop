@@ -10,7 +10,15 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from enum import StrEnum
+
+# костыль, так как jetson не работает с python 3.11
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
+
 from typing import Any, DefaultDict, List, Protocol, runtime_checkable
 
 log = logging.getLogger("bus")

@@ -1,0 +1,12 @@
+{
+  "client_host": "0.0.0.0",
+  "client_port": 5000,
+
+  "remote_host": "192.168.0.24",
+  "remote_port": 6000,
+
+  "reconnect_delay": 3.0,
+
+  "client_timeout": 30,
+  "listen_backlog": 10
+}

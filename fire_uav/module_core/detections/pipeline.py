@@ -203,9 +203,12 @@ class DetectionPipeline:
 
     # ------------------------------------------------------------------ #
     def _transmit(self, detections: Sequence[GeoDetection]) -> None:
+        print("pipline trans triggered")
         if not self.transmitter or not detections:
+            print("pipline  trans breaks")
             return
         for det in detections:
+            print("pipline  det send")
             payload = {
                 "class_id": det.class_id,
                 "confidence": det.confidence,
@@ -215,6 +218,7 @@ class DetectionPipeline:
                 "frame": det.frame_id,
             }
             try:
+                print("pipline try send")
                 self.transmitter.send(payload)
                 logger.info(
                     "Sent to ground station: cls=%s conf=%.2f lat=%.6f lon=%.6f",
@@ -224,6 +228,7 @@ class DetectionPipeline:
                     det.lon,
                 )
             except Exception:  # noqa: BLE001
+                print("pipline Failed to transmit detection")
                 logger.exception("Failed to transmit detection")
 
     def _publish_visualizer(self, det: GeoDetection) -> None:

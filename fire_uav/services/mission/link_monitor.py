@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import logging
 import time
-from enum import StrEnum
+# костыль, так как jetson не работает с python 3.11
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
 
 from fire_uav.module_core.schema import TelemetrySample
 from fire_uav.services.bus import Event, bus

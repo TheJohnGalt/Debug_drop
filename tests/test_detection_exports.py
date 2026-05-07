@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+# костыль, так как jetson не работает с python 3.11
+try:
+    from datetime import UTC, datetime
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 
 from fire_uav.module_core.schema import TelemetrySample
 from fire_uav.services.detection_exports import (

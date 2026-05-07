@@ -72,7 +72,7 @@ class Settings:
     output_root: Path = Path("data/outputs")
 
     # Отправка на наземную станцию
-    ground_station_host: str = "127.0.0.1"
+    ground_station_host: str = "192.168.0.24"
     ground_station_port: int = 9000
     ground_station_udp: bool = False
     ground_station_enabled: bool = False

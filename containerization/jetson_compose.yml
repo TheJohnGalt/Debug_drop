@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  client:
+    image: revchenkov/bpla_fire_smoke_human:latest
+    build:
+      context: ../
+      dockerfile: containerization/Dockerfile_jetson
+      args:
+        BASE_IMAGE: nvcr.io/nvidia/pytorch:26.02-py3-igpu
+        INSTALL_TORCH: "0"
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    environment:
+      FIRE_UAV_ROLE: module
+      FIRE_UAV_PROFILE: jetson
+      FIRE_UAV_SETTINGS: /app/fire_uav/config/settings_jetson.json
+    devices:
+       - /dev/video0:/dev/video0
+    volumes:
+       - /tmp/argus_socket:/tmp/argus_socket
+    privileged: true
+
+#  telemetry:
+#    image: revchenkov/telemetry:latest
+#    build:
+#      context: ../
+#      dockerfile: containerization/telemetry/Dockerfile
+#    network_mode: host
+#    environment:
+#      CONFIG_PATH: /app/telemetry/telemetry_config.json
+#    devices:
+#      - /dev/ttyUSB1:/dev/ttyUSB1
+#    group_add:
+#      - dialout
+#    restart: unless-stopped

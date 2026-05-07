@@ -3,7 +3,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
+# костыль, так как jetson не работает с python 3.11
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
 from typing import Iterable, Sequence
 
 from fire_uav.services.bus import Event, bus
