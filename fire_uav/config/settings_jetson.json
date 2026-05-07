@@ -59,6 +59,7 @@
   "battery_wh": 77.0,
   "no_fly_geojson": "data/no_fly_zones.geojson",
   "yolo_model": "data/models/best_yolo11.pt",
+  "yolo_rknn_model": "data/models/best_yolo11.rknn",
   "yolo_conf": 0.15,
   "yolo_classes": [
     0,

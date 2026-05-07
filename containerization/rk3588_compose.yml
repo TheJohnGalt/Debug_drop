@@ -3,34 +3,27 @@ version: '3.8'
 services:
   client:
     image: revchenkov/bpla_fire_smoke_human_RK3588:latest
-
     build:
       context: ../
       dockerfile: containerization/Dockerfile_rk3588
       args:
+        BASE_IMAGE: python:3.10-slim
         INSTALL_TORCH: "1"
-
     platform: linux/arm64
-
     network_mode: host
     ipc: host
-
     environment:
       FIRE_UAV_ROLE: module
       FIRE_UAV_PROFILE: jetson
       FIRE_UAV_SETTINGS: /app/fire_uav/config/settings_jetson.json
-
       LD_LIBRARY_PATH: /usr/lib:$LD_LIBRARY_PATH
-
     devices:
       - /dev/video0:/dev/video0:ro
       - /dev/rknpu:/dev/rknpu
       - /dev/dri:/dev/dri
-
     volumes:
       - /usr/lib/librknnrt.so:/usr/lib/librknnrt.so
       - /tmp/argus_socket:/tmp/argus_socket
-
     restart: unless-stopped
 
 #  telemetry:
