@@ -68,6 +68,7 @@ class CameraThread(ManagedComponent):
 
 
     def loop(self) -> None:
+
         if settings.gstreamer_pipline is not None:
             cap = cv2.VideoCapture(settings.gstreamer_pipline, cv2.CAP_GSTREAMER)
         else:

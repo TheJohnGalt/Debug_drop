@@ -63,7 +63,6 @@ class DetectionEngine:
             "device": device,
         }
         self._wanted = set(wanted_classes or settings.yolo_classes)
-
         _log.info(
             "YOLO %s loaded (device=%s, conf=%.2f, classes=%s)",
             model_path,
