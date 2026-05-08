@@ -115,6 +115,7 @@ class Settings:
     max_flight_distance_m: float = 0.0
     min_return_percent: float = 20.0
     critical_battery_percent: float = 10.0
+    gstreamer_pipline: str | None = None
 
     @classmethod
     def from_dict(cls, data: _SettingsDict) -> "Settings":
@@ -282,6 +283,7 @@ class Settings:
             critical_battery_percent=float(
                 data.get("critical_battery_percent", defaults.critical_battery_percent)
             ),
+            gstreamer_pipline=str(data.get("gstreamer_pipline", defaults.gstreamer_pipline)),
         )
 
 

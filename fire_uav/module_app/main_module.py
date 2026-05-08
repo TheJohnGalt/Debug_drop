@@ -9,6 +9,7 @@ from datetime import datetime
 
 import uvicorn
 
+import fire_uav.infrastructure.providers as deps
 from fire_uav.bootstrap import init_module_core
 from fire_uav.config.logging_config import setup_logging
 from fire_uav.module_app.config import load_module_settings
@@ -16,7 +17,7 @@ from fire_uav.module_app.health_api import app as health_app, configure_health, 
 from fire_uav.core.telemetry import coerce_battery_percent
 from fire_uav.module_core.adapters import IUavAdapter, IUavTelemetryConsumer
 from fire_uav.module_core.drivers.registry import create_driver
-from fire_uav.module_core.detections import DetectionAggregator, DetectionPipeline
+from fire_uav.module_core.detections import DetectionAggregator, DetectionPipeline, DetectionBatchPayload, RawDetectionPayload
 from fire_uav.module_core.factories import get_energy_model, get_geo_projector
 from fire_uav.module_core.interfaces.energy import IEnergyModel
 from fire_uav.module_core.route.base_location import resolve_base_location
@@ -83,6 +84,7 @@ class _ModuleTelemetryConsumer(IUavTelemetryConsumer):
 
         battery_percent = coerce_battery_percent(sample.battery, sample.battery_percent)
         critical_threshold = getattr(self.settings, "critical_battery_percent", 10.0)
+
         if battery_percent is None or battery_percent > critical_threshold:
             return
         if self._emergency_active:
@@ -104,6 +106,7 @@ class _ModuleTelemetryConsumer(IUavTelemetryConsumer):
             critical_threshold,
         )
         bus.emit(Event.BATTERY_CRITICAL, {"battery_percent": battery_percent})
+
         await self.adapter.push_route(return_route)
 
 
@@ -140,6 +143,50 @@ async def _run_health_server(cfg) -> None:
     _health_server = server
     await server.serve()
 
+
+async def _detection_loop(
+    pipeline: DetectionPipeline,
+    planner: PythonRoutePlanner,
+) -> None:
+    while True:
+        # queue.Queue.get() блокирующий
+        batch = await asyncio.to_thread(deps.dets_queue.get)
+
+        telemetry = planner.latest_telemetry
+        if telemetry is None:
+            continue
+
+        now = utc_now()
+
+        raw_detections = [
+            RawDetectionPayload(
+                class_id=det.class_id,
+                confidence=det.confidence,
+                bbox=det.bbox,
+                frame_id=batch.frame.camera_id,
+                timestamp=now,
+                track_id=None,
+            )
+            for det in batch.detections
+        ]
+
+        payload = DetectionBatchPayload(
+            frame_id=batch.frame.camera_id,
+            frame_width=batch.frame.width,
+            frame_height=batch.frame.height,
+            captured_at=now,
+            telemetry=telemetry,
+            detections=raw_detections,
+        )
+
+        try:
+            confirmed = pipeline.process_batch(payload)
+
+            if confirmed:
+                log.info("Confirmed detections: %d", len(confirmed))
+
+        except Exception:
+            log.exception("Detection pipeline failed")
 
 async def _watchdog_loop(cfg) -> None:
     """Periodic watchdog that checks telemetry and detections recency."""
@@ -224,10 +271,10 @@ async def _run() -> None:
         pipeline.__class__.__name__,
     )
 
+    
     # Start capture/detect threads if available.
     bus.emit(Event.APP_START)
     log.info("Started core lifecycle threads")
-
     health_state.mark_start()
     configure_health(
         telemetry_timeout_sec=cfg.no_telemetry_timeout_sec,
@@ -237,6 +284,13 @@ async def _run() -> None:
 
     health_server = asyncio.create_task(_run_health_server(cfg))
     watchdog = asyncio.create_task(_watchdog_loop(cfg))
+
+    detection_task = asyncio.create_task(
+        _detection_loop(
+            pipeline=pipeline,
+            planner=planner,
+        )
+    )
 
     await adapter.start(telemetry_consumer)
     
@@ -253,6 +307,11 @@ async def _run() -> None:
             watchdog.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await watchdog
+
+        if detection_task:
+            detection_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await detection_task
         try:
             await adapter.stop()
         except Exception:  # noqa: BLE001

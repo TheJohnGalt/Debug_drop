@@ -13,13 +13,15 @@ services:
     network_mode: host
     ipc: host
     environment:
+      GST_DEBUG: 0
       FIRE_UAV_ROLE: module
       FIRE_UAV_PROFILE: jetson
       FIRE_UAV_SETTINGS: /app/fire_uav/config/settings_jetson.json
-    devices:
-       - /dev/video0:/dev/video0
     volumes:
+       - /dev:/dev
        - /tmp/argus_socket:/tmp/argus_socket
+       - /tmp/.X11-unix:/tmp/.X11-unix
+       - /home/user/compvis/BPLA_Docker/BPLA_fire_smoke_human-in-the-forest:/app/
     privileged: true
 
 #  telemetry:

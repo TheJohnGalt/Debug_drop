@@ -10,6 +10,7 @@ from typing import Callable, Final
 import cv2
 import numpy as np
 
+from fire_uav.config.settings import settings
 from fire_uav.services.components.base import ManagedComponent, State
 from fire_uav.services.metrics import fps_gauge
 
@@ -64,8 +65,14 @@ class CameraThread(ManagedComponent):
         else:
             LOG.warning(message)
 
+
+
     def loop(self) -> None:
-        cap = cv2.VideoCapture(self.index)
+        if settings.gstreamer_pipline is not None:
+            cap = cv2.VideoCapture(settings.gstreamer_pipline, cv2.CAP_GSTREAMER)
+        else:
+            cap = cv2.VideoCapture(self.index)
+        
         if not cap.isOpened():
             self._emit_error("Camera not opened")
             return
@@ -95,3 +102,5 @@ class CameraThread(ManagedComponent):
     def stop(self) -> None:
         super().stop()
         self.state = State.STOPPED
+
+

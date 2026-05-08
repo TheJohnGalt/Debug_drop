@@ -59,7 +59,6 @@
   "battery_wh": 77.0,
   "no_fly_geojson": "data/no_fly_zones.geojson",
   "yolo_model": "data/models/best_yolo11.pt",
-  "yolo_rknn_model": "data/models/best_yolo11.rknn",
   "yolo_conf": 0.15,
   "yolo_classes": [
     0,
@@ -67,7 +66,7 @@
   ],
   "ground_station_enabled": true,
   "ground_station_host": "192.168.0.24",
-  "ground_station_port": 9000,
+  "ground_station_port": 6000,
   "ground_station_udp": false,
   "agg_window": 3,
   "agg_votes_required": 1,
@@ -80,5 +79,6 @@
   "object_registry_match_radius_m": 45.0,
   "suppression_radius_m": 30.0,
   "suppression_ttl_s": 180.0,
-  "stable_frames_n": 1
+  "stable_frames_n": 1,
+  "gstreamer_pipline": "nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=3280, height=2464, framerate=21/1, format=NV12 ! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true max-buffers=1 sync=false"
 }

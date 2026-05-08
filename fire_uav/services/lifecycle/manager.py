@@ -29,6 +29,7 @@ class LifecycleManager:
                 continue
             self._components.append(c)
             _log.debug("Registered component %s", c.name)
+            print("LifecycleManager Registered component %s", c.name)
 
     # ───────────────── start / stop ───────────────────── #
     def start_all(self) -> None:

@@ -48,6 +48,10 @@ def init_module_core(*, fps: int = 30) -> None:
         _log.warning("Camera not found — GUI will start without live feed")
 
     deps.lifecycle_manager = LifecycleManager()
+    detect_thread = deps.get_detector()
+    camera_thread = deps.get_camera()
+    deps.lifecycle_manager.register(detect_thread, camera_thread)
+
     bus.subscribe(Event.APP_START, lambda *_: deps.get_lifecycle().start_all())
     bus.subscribe(Event.APP_STOP, lambda *_: deps.get_lifecycle().stop_all())
 

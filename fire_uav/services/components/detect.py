@@ -150,6 +150,7 @@ class DetectThread(ManagedComponent):
 
             bus.emit(Event.DETECTION, batch)
 
+
             # periodic debug
             now = time.perf_counter()
             if now - self._stat_ts >= _STAT_EVERY:

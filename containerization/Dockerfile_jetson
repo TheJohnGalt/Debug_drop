@@ -7,11 +7,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-opencv \
+    v4l-utils \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    libgstreamer1.0-0 \
+    libgstreamer-plugins-base1.0-0 \
     libgl1 \
     libglib2.0-0 \
-    libxkbcommon0 \
-    libxcb1 \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -21,14 +28,15 @@ ARG INSTALL_TORCH=1
 
 # Установка Python зависимостей
 RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
-        grep -vE '^(torch|torchvision)[=<>]' requirements.txt > /tmp/req.txt && \
-        pip3 install --no-cache-dir --no-deps --ignore-installed -r /tmp/req.txt; \
+        grep -vE '^(torch|torchvision|PyYAML|Pygments|opencv-python)[=<>]' requirements.txt > /tmp/req.txt && \
+        pip3 install --no-cache-dir --upgrade-strategy only-if-needed --no-deps -r /tmp/req.txt; \
+
     else \
-        pip3 install --no-cache-dir -r requirements.txt; \
+        pip3 install --no-cache-dir --upgrade-strategy only-if-needed -r requirements.txt; \
     fi
 
 COPY ../. .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "fire_uav.api.main_rest:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "fire_uav.main"]

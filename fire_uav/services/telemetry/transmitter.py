@@ -39,6 +39,7 @@ class Transmitter:
         )
 
     def send(self, obj: Any) -> None:
+        print("send")
         data = (json.dumps(obj) + "\n").encode()
         if self.udp:
             self.sock.sendto(data, self.addr)
