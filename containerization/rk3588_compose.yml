@@ -9,36 +9,42 @@ services:
       args:
         BASE_IMAGE: python:3.10-slim
         INSTALL_TORCH: "1"
+
     platform: linux/arm64
     network_mode: host
     ipc: host
+    privileged: true
+
     environment:
       FIRE_UAV_ROLE: module
-      FIRE_UAV_PROFILE: jetson
+      FIRE_UAV_PROFILE: rk3588
       FIRE_UAV_SETTINGS: /app/fire_uav/config/settings_jetson.json
-      LD_LIBRARY_PATH: /usr/lib:$LD_LIBRARY_PATH
+      LD_LIBRARY_PATH: /usr/lib
+
     devices:
-      - /dev/video0:/dev/video0:ro
+      - /dev/video0:/dev/video0
       - /dev/rknpu:/dev/rknpu
       - /dev/dri:/dev/dri
+
     volumes:
       - /usr/lib/librknnrt.so:/usr/lib/librknnrt.so
-      - /tmp/argus_socket:/tmp/argus_socket
+      - /dev:/dev
+
     restart: unless-stopped
 
-#  telemetry:
-#    image: revchenkov/telemetry:latest
-#    build:
-#      context: ../
-#      dockerfile: containerization/telemetry/Dockerfile
-#    network_mode: host
-#    environment:
-#      CONFIG_PATH: /app/config.json
-  #    devices:
-  #      - /dev/ttyUSB1:/dev/ttyUSB1
-  #    group_add:
-  #      - dialout
-  #    restart: unless-stopped
+  telemetry:
+    image: revchenkov/telemetry:latest
+    build:
+      context: ../
+      dockerfile: containerization/telemetry/Dockerfile
+    network_mode: host
+    environment:
+      CONFIG_PATH: /app/config.json
+      devices:
+        - /dev/ttyUSB1:/dev/ttyUSB1
+      group_add:
+        - dialout
+      restart: unless-stopped
 
 
 

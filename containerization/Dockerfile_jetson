@@ -1,7 +1,6 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-# Переменные окружения
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
@@ -20,13 +19,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
 
+WORKDIR /app
 COPY ../requirements.txt .
 
 ARG INSTALL_TORCH=1
-
-# Установка Python зависимостей
 RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
         grep -vE '^(torch|torchvision|PyYAML|Pygments|opencv-python)[=<>]' requirements.txt > /tmp/req.txt && \
         pip3 install --no-cache-dir --upgrade-strategy only-if-needed --no-deps -r /tmp/req.txt; \
@@ -36,7 +33,5 @@ RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
     fi
 
 COPY ../. .
-
-EXPOSE 8000
 
 CMD ["python", "-m", "fire_uav.main"]

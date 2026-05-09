@@ -13,7 +13,6 @@ services:
     network_mode: host
     ipc: host
     environment:
-      GST_DEBUG: 0
       FIRE_UAV_ROLE: module
       FIRE_UAV_PROFILE: jetson
       FIRE_UAV_SETTINGS: /app/fire_uav/config/settings_jetson.json
@@ -24,16 +23,16 @@ services:
        - /home/user/compvis/BPLA_Docker/BPLA_fire_smoke_human-in-the-forest:/app/
     privileged: true
 
-#  telemetry:
-#    image: revchenkov/telemetry:latest
-#    build:
-#      context: ../
-#      dockerfile: containerization/telemetry/Dockerfile
-#    network_mode: host
-#    environment:
-#      CONFIG_PATH: /app/telemetry/telemetry_config.json
-#    devices:
-#      - /dev/ttyUSB1:/dev/ttyUSB1
-#    group_add:
-#      - dialout
-#    restart: unless-stopped
+  telemetry:
+    image: revchenkov/telemetry:latest
+    build:
+      context: ../
+      dockerfile: containerization/telemetry/Dockerfile
+    network_mode: host
+    environment:
+      CONFIG_PATH: /app/telemetry/telemetry_config.json
+    devices:
+      - /dev/ttyUSB1:/dev/ttyUSB1
+    group_add:
+      - dialout
+    restart: unless-stopped
