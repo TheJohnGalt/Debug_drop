@@ -7,30 +7,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-opencv \
-    v4l-utils \
-    gstreamer1.0-tools \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad \
-    gstreamer1.0-plugins-ugly \
     libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-
 WORKDIR /app
 COPY ../requirements.txt .
 
-ARG INSTALL_TORCH=1
-RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
-        grep -vE '^(torch|torchvision|PyYAML|Pygments|opencv-python)[=<>]' requirements.txt > /tmp/req.txt && \
-        pip3 install --no-cache-dir --upgrade-strategy only-if-needed --no-deps -r /tmp/req.txt; \
-
-    else \
-        pip3 install --no-cache-dir --upgrade-strategy only-if-needed -r requirements.txt; \
-    fi
+RUN grep -vE '^(torch|torchvision|PyYAML|Pygments|opencv-python)[=<>]' requirements.txt > /tmp/req.txt && \
+    pip3 install --upgrade-strategy only-if-needed --no-deps -r /tmp/req.txt
 
 COPY ../. .
 

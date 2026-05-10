@@ -65,8 +65,8 @@
     1
   ],
   "ground_station_enabled": true,
-  "ground_station_host": "192.168.0.24",
-  "ground_station_port": 6000,
+  "ground_station_host": "127.0.0.1",
+  "ground_station_port": 5000,
   "ground_station_udp": false,
   "agg_window": 3,
   "agg_votes_required": 1,

@@ -2,13 +2,14 @@ version: '3.8'
 
 services:
   client:
+    depends_on:
+     - telemetry
     image: revchenkov/bpla_fire_smoke_human:latest
     build:
       context: ../
       dockerfile: containerization/Dockerfile_jetson
       args:
         BASE_IMAGE: nvcr.io/nvidia/pytorch:26.02-py3-igpu
-        INSTALL_TORCH: "0"
     runtime: nvidia
     network_mode: host
     ipc: host
@@ -32,7 +33,8 @@ services:
     environment:
       CONFIG_PATH: /app/telemetry/telemetry_config.json
     devices:
-      - /dev/ttyUSB1:/dev/ttyUSB1
+      - /dev/ttyUSB2:/dev/ttyUSB2
+      - /dev/ttyTHS1:/dev/ttyTHS1
     group_add:
       - dialout
     restart: unless-stopped

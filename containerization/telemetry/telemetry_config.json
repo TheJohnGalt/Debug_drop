@@ -8,5 +8,16 @@
   "reconnect_delay": 3.0,
 
   "client_timeout": 30,
-  "listen_backlog": 10
+  "listen_backlog": 10,
+
+  "uav_id": "uav-1",
+
+  "mavlink_device": "/dev/ttyTHS1",
+  "mavlink_baudrate": 57600,
+
+  "modem_device": "/dev/ttyUSB2",
+  "modem_baudrate": 115200,
+  "mavlink_position_hz": 10,
+  "mavlink_attitude_hz": 20,
+  "mavlink_battery_hz": 1
 }
