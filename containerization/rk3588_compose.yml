@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   client:
-    image: revchenkov/bpla_fire_smoke_human_RK3588:latest
+    image: revchenkov/bpla_fire_smoke_human_rk3588:latest
     build:
       context: ../
       dockerfile: containerization/Dockerfile_rk3588
@@ -39,12 +39,13 @@ services:
       dockerfile: containerization/telemetry/Dockerfile
     network_mode: host
     environment:
-      CONFIG_PATH: /app/config.json
-      devices:
-        - /dev/ttyUSB1:/dev/ttyUSB1
-      group_add:
-        - dialout
-      restart: unless-stopped
+      CONFIG_PATH: /app/telemetry/telemetry_config.json
+    devices:
+      - /dev/ttyUSB2:/dev/ttyUSB2
+      - /dev/ttyTHS1:/dev/ttyTHS1
+    group_add:
+      - dialout
+    restart: unless-stopped
 
 
 

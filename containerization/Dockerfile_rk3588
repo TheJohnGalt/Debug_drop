@@ -1,12 +1,20 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=python:3.9-slim
 FROM ${BASE_IMAGE}
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    LD_LIBRARY_PATH=/usr/lib
+    LD_LIBRARY_PATH=/usr/lib:/usr/lib/aarch64-linux-gnu
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-opencv \
+    v4l-utils \
+    media-ctl \
+    gstreamer1.0-tools \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    libgstreamer1.0-0 \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -15,31 +23,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     libxkbcommon0 \
     libxcb1 \
-    cmake \
-    git \
-    v4l-utils \
  && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools wheel
-
-RUN pip install rknn-toolkit-lite2
 
 WORKDIR /app
 
 COPY ../requirements.txt .
 
-ARG INSTALL_TORCH=1
+ARG INSTALL_TORCH=0
 
 RUN if [ "${INSTALL_TORCH}" = "1" ]; then \
-        pip install torch torchvision; \
+        pip install --no-cache-dir torch torchvision; \
     fi
 
 RUN if [ "${INSTALL_TORCH}" = "0" ]; then \
-        grep -vE '^(torch|torchvision)[=<>]' requirements.txt > /tmp/req.txt && \
+        grep -vE '^(torch|torchvision)([=<> ]|$)' requirements.txt > /tmp/req.txt && \
         pip install --no-cache-dir -r /tmp/req.txt; \
     else \
         pip install --no-cache-dir -r requirements.txt; \
     fi
+
+RUN pip install --no-cache-dir rknn-toolkit-lite2
 
 COPY ../. .
 
