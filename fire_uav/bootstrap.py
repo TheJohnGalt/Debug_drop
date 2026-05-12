@@ -17,10 +17,17 @@ from fire_uav.services.lifecycle.manager import LifecycleManager
 _log = logging.getLogger(__name__)
 
 
-def _camera_available(index: int | str = 0) -> bool:
+def _camera_or_fallback_frame_available(index: int | str = 0) -> bool:
     cap = cv2.VideoCapture(index)
     ok = cap.isOpened()
     cap.release()
+
+    _fallback_frame = cv2.imread("fire_uav/utils/debug/debug_img/fallback_frame.png")
+    if _fallback_frame is None:
+        ok = False
+    else:
+        ok = True
+
     return ok
 
 
@@ -31,7 +38,7 @@ def init_module_core(*, fps: int = 30) -> None:
     deps.frame_queue = Queue(maxsize=5)
     deps.dets_queue = Queue(maxsize=5)
 
-    if _camera_available():
+    if _camera_or_fallback_frame_available():
         deps.camera_factory = lambda: CameraThread(
             index=0,
             fps=fps,
@@ -46,6 +53,8 @@ def init_module_core(*, fps: int = 30) -> None:
         deps.detect_factory = None
 
         _log.warning("Camera not found — GUI will start without live feed")
+
+    print(deps.camera_factory, deps.camera_factory)
 
     deps.lifecycle_manager = LifecycleManager()
     detect_thread = deps.get_detector()

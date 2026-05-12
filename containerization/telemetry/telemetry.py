@@ -384,14 +384,8 @@ async def get_telemetry():
 
 @app.on_event("startup")
 async def startup_event():
-
     start()
-
-    thread = threading.Thread(
-        target=telemetry_worker,
-        daemon=True,
-    )
-
+    thread = threading.Thread( target=telemetry_worker, daemon=True, )
     thread.start()
 
 

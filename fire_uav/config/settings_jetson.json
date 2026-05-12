@@ -59,7 +59,7 @@
   "battery_wh": 77.0,
   "no_fly_geojson": "data/no_fly_zones.geojson",
   "yolo_model": "data/models/best_yolo11.pt",
-  "yolo_conf": 0.15,
+  "yolo_conf": 0.30,
   "yolo_classes": [
     0,
     1
@@ -70,9 +70,9 @@
   "ground_station_udp": false,
   "agg_window": 3,
   "agg_votes_required": 1,
-  "agg_min_confidence": 0.4,
-  "agg_max_distance_m": 60.0,
-  "agg_ttl_seconds": 8.0,
+  "agg_min_confidence": 0.01,
+  "agg_max_distance_m": 1.0,
+  "agg_ttl_seconds": 1.0,
   "dedup_bbox_center_distance_px": 120.0,
   "dedup_geo_distance_m": 45.0,
   "match_radius_m": 35.0,

@@ -32,9 +32,9 @@ services:
     network_mode: host
     environment:
       CONFIG_PATH: /app/telemetry/telemetry_config.json
-    devices:
-      - /dev/ttyUSB2:/dev/ttyUSB2
-      - /dev/ttyTHS1:/dev/ttyTHS1
+#    devices:
+#      - /dev/ttyUSB2:/dev/ttyUSB2
+#      - /dev/ttyTHS1:/dev/ttyTHS1
     group_add:
       - dialout
     restart: unless-stopped

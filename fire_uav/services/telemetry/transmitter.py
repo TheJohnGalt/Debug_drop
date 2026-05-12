@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import os
 import json
 import logging
 import socket
 from typing import Any
+
 
 _log = logging.getLogger(__name__)
 
@@ -39,8 +41,8 @@ class Transmitter:
         )
 
     def send(self, obj: Any) -> None:
-        print("send")
         data = (json.dumps(obj) + "\n").encode()
+        print("data sended")
         if self.udp:
             self.sock.sendto(data, self.addr)
         else:

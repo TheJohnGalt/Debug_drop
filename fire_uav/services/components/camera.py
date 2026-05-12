@@ -59,6 +59,7 @@ class CameraThread(ManagedComponent):
     def _emit_error(self, message: str) -> None:
         if self._on_error is not None:
             try:
+                print(message)
                 self._on_error(message)
             except Exception:  # noqa: BLE001
                 pass
@@ -74,12 +75,23 @@ class CameraThread(ManagedComponent):
         else:
             cap = cv2.VideoCapture(self.index)
         
+        _fallback_frame = None
+
         if not cap.isOpened():
             self._emit_error("Camera not opened")
-            return
+            _fallback_frame = cv2.imread("fire_uav/utils/debug/debug_img/fallback_frame.png")
+            if _fallback_frame is None:
+                self._emit_error("Camera not opened and fallback image not found")
+            cap = None
 
         while not self._stop_event.is_set():
-            ok, frame = cap.read()
+
+            if cap is not None:
+                ok, frame = cap.read()
+            else:
+                ok = True
+                frame = _fallback_frame
+
             if not ok:
                 self._emit_error("Failed to read frame")
                 break

@@ -14,12 +14,11 @@ class StubUavAdapter(IUavAdapter):
     """
     In-process stub that emits dummy telemetry so the module can run without real hardware.
     """
-
     def __init__(
         self,
         *,
-        default_lat: float = 56.02,
-        default_lon: float = 92.90,
+        default_lat: float = 56.031609,
+        default_lon: float = 92.948315,
         default_alt: float = 30.0,
         default_yaw: float = 0.0,
         interval_sec: float = 1.0,

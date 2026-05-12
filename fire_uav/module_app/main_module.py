@@ -222,6 +222,7 @@ async def _watchdog_loop(cfg) -> None:
 
 
 async def _run() -> None:
+
     """Configure shared services and start headless processing loop."""
     cfg = load_module_settings()
     setup_logging(cfg)
@@ -243,6 +244,7 @@ async def _run() -> None:
         max_distance_m=cfg.agg_max_distance_m,
         ttl_seconds=cfg.agg_ttl_seconds,
     )
+
     pipeline = DetectionPipeline(
         aggregator=aggregator,
         projector=projector,
@@ -270,10 +272,10 @@ async def _run() -> None:
         projector.__class__.__name__,
         pipeline.__class__.__name__,
     )
-
     
     # Start capture/detect threads if available.
     bus.emit(Event.APP_START)
+    print("start")
     log.info("Started core lifecycle threads")
     health_state.mark_start()
     configure_health(
