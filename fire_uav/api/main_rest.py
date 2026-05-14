@@ -51,7 +51,7 @@ if settings.ground_station_enabled:
         log.exception("Failed to connect transmitter to ground station")
         _transmitter = None
 
-detection_pipeline = DetectionPipeline(transmitter=_transmitter)
+detection_pipeline = DetectionPipeline()
 
 
 class Waypoint(BaseModel):

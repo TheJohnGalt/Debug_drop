@@ -8,6 +8,7 @@ from fire_uav.services.lifecycle.manager import LifecycleManager
 if TYPE_CHECKING:  # imports only for type checking to avoid circular deps
     from fire_uav.services.components.camera import CameraThread
     from fire_uav.services.components.detect import DetectThread
+    from fire_uav.services.components.relay_component import RelayThread
 
 # ────────── очереди ────────── #
 frame_queue: Optional[Queue] = None  # кадры camera → detector
@@ -16,6 +17,7 @@ dets_queue: Optional[Queue] = None  # детекции detector → GUI/API
 # ────────── фабрики компонентов ────────── #
 camera_factory: Callable[[], "CameraThread"] | None = None
 detect_factory: Callable[[], "DetectThread"] | None = None
+relay_factory: Callable[[], "RelayThread"] | None = None
 plan_widget_factory: Callable[..., object] | None = None
 
 # ────────── lifecycle ────────── #
@@ -56,6 +58,11 @@ def get_detector() -> "DetectThread":
         raise RuntimeError("detect_factory not configured")
     return detect_factory()
 
+def get_realy() -> "RelayThread":
+    if relay_factory is None:
+        print("relay_factory not configured")
+        raise RuntimeError("relay_factory not configured")
+    return relay_factory()
 
 def get_lifecycle() -> "LifecycleManager":
     if lifecycle_manager is None:

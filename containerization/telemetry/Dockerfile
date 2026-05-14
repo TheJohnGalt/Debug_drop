@@ -23,4 +23,4 @@ RUN pip install --no-cache-dir \
 
 COPY containerization/telemetry/ /app/telemetry/
 
-CMD ["python", "/app/telemetry/retranslator.py"]
+CMD uvicorn telemetry:app --host ${HOST:-0.0.0.0} --port ${PORT:-8000}

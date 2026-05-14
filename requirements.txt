@@ -157,7 +157,7 @@ types-setuptools==80.9.0.20250529
 typing-inspection==0.4.1
 typing_extensions==4.14.0
 tzdata==2024.2
-ultralytics==8.3.0
+ultralytics==8.3.71
 ultralytics-thop==2.0.9
 urllib3==2.5.0
 uvicorn==0.30.6

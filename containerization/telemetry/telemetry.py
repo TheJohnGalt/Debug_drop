@@ -13,6 +13,9 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from pymavlink import mavutil
 
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Literal
+
 TYPE_IS_UAV = False
 
 MAVLINK_CONNECTION: mavutil.mavfile | None = None
@@ -43,24 +46,40 @@ MAVLINK_ATTITUDE_HZ = CONFIG["mavlink_attitude_hz"]
 MAVLINK_BATTERY_HZ = CONFIG["mavlink_battery_hz"]
 
 MISSION_TIMEOUT_SEC = CONFIG["mission_timeout_sec"]
-MAVLINK_MISSION_HZ = CONFIG["mavlink_mission_hz"]
 
 app = FastAPI(title="Telemetry Service")
 
+class ContractBaseV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
-class Waypoint(BaseModel):
-    lat: float
-    lon: float
+    protocol_version: Literal[1] = 1
+    uav_id: str
+    timestamp: datetime
+
+class CommandV1(ContractBaseV1):
+    command_id: str
+    type: str
+    params: dict
+
+class WaypointV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
     alt: float
+    speed_mps: float | None = None
+    loiter_radius_m: float | None = None
+    action: str | None = None
 
+class RouteV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
-class MissionRequest(BaseModel):
-    protocol_version: int = 1
+    protocol_version: Literal[1] = 1
     uav_id: str
     route_id: str
+    waypoints: list[WaypointV1]
     mode: str
-    created_at: str
-    waypoints: list[Waypoint]
+    created_at: datetime
 
 class TelemetryData(BaseModel):
     protocol_version: int = 1
@@ -136,19 +155,22 @@ def start() -> None:
         )
 
     else:
-        MODEM_SERIAL = serial.Serial(
-            MODEM_DEVICE,
-            MODEM_BAUDRATE,
-            timeout=1,
-        )
+        try:
+            MODEM_SERIAL = serial.Serial(
+                MODEM_DEVICE,
+                MODEM_BAUDRATE,
+                timeout=1,
+            )
 
-        MODEM_SERIAL.write(b"AT+CGNSPWR=1\r")
-        MODEM_SERIAL.flush()
+            MODEM_SERIAL.write(b"AT+CGNSPWR=1\r")
+            MODEM_SERIAL.flush()
+        except:
+            pass
 
 
-def send_mission(waypoints: list[Waypoint]) -> bool:
+def send_mission(waypoints) -> bool:
     """
-    Отправка миссии в автопилот через MAVLink (MISSION protocol).
+    Отправка миссии в автопилот через MAVLink.
     """
     global MAVLINK_CONNECTION
 
@@ -158,7 +180,6 @@ def send_mission(waypoints: list[Waypoint]) -> bool:
     try:
         count = len(waypoints)
 
-        # 1. отправка количества точек
         MAVLINK_CONNECTION.mav.mission_count_send(
             MAVLINK_CONNECTION.target_system,
             MAVLINK_CONNECTION.target_component,
@@ -166,25 +187,108 @@ def send_mission(waypoints: list[Waypoint]) -> bool:
             0,
         )
 
-        # 2. отправка waypoint’ов
         for seq, wp in enumerate(waypoints):
-
             MAVLINK_CONNECTION.mav.mission_item_int_send(
                 MAVLINK_CONNECTION.target_system,
                 MAVLINK_CONNECTION.target_component,
                 seq,
                 mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
                 mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                0, 1,
-                0, 0, 0, 0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
                 int(wp.lat * 1e7),
                 int(wp.lon * 1e7),
                 float(wp.alt),
             )
 
-        # 3. ожидание ACK (упрощённо)
         ack = MAVLINK_CONNECTION.recv_match(
             type="MISSION_ACK",
+            blocking=True,
+            timeout=MISSION_TIMEOUT_SEC,
+        )
+
+        return ack is not None
+
+    except Exception:
+        return False
+
+def send_command(command: CommandV1) -> bool:
+    """
+    Отправка простой команды в автопилот через MAVLink.
+    """
+    global MAVLINK_CONNECTION
+
+    if MAVLINK_CONNECTION is None:
+        return False
+
+    try:
+        command_type = command.type.value if hasattr(command.type, "value") else command.type
+        params = command.params or {}
+
+        if command_type == "START":
+            mav_cmd = mavutil.mavlink.MAV_CMD_MISSION_START
+            p1 = float(params.get("first_item", 0))
+            p2 = float(params.get("last_item", 0))
+            p3 = p4 = p5 = p6 = p7 = 0.0
+
+        elif command_type == "ABORT":
+            mav_cmd = mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE
+            p1 = 0.0
+            p2 = p3 = p4 = p5 = p6 = p7 = 0.0
+
+        elif command_type == "RTL":
+            mav_cmd = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+            p1 = p2 = p3 = p4 = p5 = p6 = p7 = 0.0
+
+        elif command_type == "ORBIT":
+            mav_cmd = mavutil.mavlink.MAV_CMD_DO_ORBIT
+            p1 = float(params.get("radius_m", math.nan))
+            p2 = float(params.get("velocity_mps", math.nan))
+            p3 = float(params.get("yaw_behavior", math.nan))
+            p4 = float(params.get("orbits_rad", 0.0))
+            p5 = float(params.get("lat", math.nan))
+            p6 = float(params.get("lon", math.nan))
+            p7 = float(params.get("alt", math.nan))
+
+        elif command_type == "APPLY_ROUTE":
+            mav_cmd = mavutil.mavlink.MAV_CMD_MISSION_START
+            p1 = float(params.get("first_item", 0))
+            p2 = float(params.get("last_item", 0))
+            p3 = p4 = p5 = p6 = p7 = 0.0
+
+        elif command_type == "LAND":
+            mav_cmd = mavutil.mavlink.MAV_CMD_NAV_LAND
+            p1 = float(params.get("abort_alt_m", 0.0))
+            p2 = float(params.get("precision_land_mode", 0.0))
+            p3 = 0.0
+            p4 = float(params.get("yaw_deg", math.nan))
+            p5 = float(params.get("lat", math.nan))
+            p6 = float(params.get("lon", math.nan))
+            p7 = float(params.get("alt", math.nan))
+
+        else:
+            return False
+
+        MAVLINK_CONNECTION.mav.command_long_send(
+            MAVLINK_CONNECTION.target_system,
+            MAVLINK_CONNECTION.target_component,
+            mav_cmd,
+            0,
+            p1,
+            p2,
+            p3,
+            p4,
+            p5,
+            p6,
+            p7,
+        )
+
+        ack = MAVLINK_CONNECTION.recv_match(
+            type="COMMAND_ACK",
             blocking=True,
             timeout=MISSION_TIMEOUT_SEC,
         )
@@ -299,47 +403,57 @@ def pull_uav_telemetry() -> Optional[TelemetryData]:
     except Exception:
         return None
 
-
 def pull_modem_telemetry() -> Optional[TelemetryData]:
-    """
-    Получение GNSS телеметрии с модема.
-    """
-    global MODEM_SERIAL
+    return TelemetryData(
+        uav_id=UAV_ID,
+        timestamp=utc_now_iso(),
 
-    if MODEM_SERIAL is None:
-        return None
+        lat=56.03161,
+        lon=92.948316,
+        alt=30.0,
+    )
 
-    try:
-        MODEM_SERIAL.write(b"AT+CGNSINF\r")
-        MODEM_SERIAL.flush()
+# временно закоментировано
+# def pull_modem_telemetry() -> Optional[TelemetryData]:
+#     """
+#     Получение GNSS телеметрии с модема.
+#     """
+#     global MODEM_SERIAL
 
-        lines = MODEM_SERIAL.readlines()
+#     if MODEM_SERIAL is None:
+#         return None
 
-        for raw in lines:
-            line = raw.decode(errors="ignore").strip()
+#     try:
+#         MODEM_SERIAL.write(b"AT+CGNSINF\r")
+#         MODEM_SERIAL.flush()
 
-            if "+CGNSINF:" not in line:
-                continue
+#         lines = MODEM_SERIAL.readlines()
 
-            data = line.split(",")
+#         for raw in lines:
+#             line = raw.decode(errors="ignore").strip()
 
-            lat = float(data[3])
-            lon = float(data[4])
-            alt = float(data[5])
+#             if "+CGNSINF:" not in line:
+#                 continue
 
-            return TelemetryData(
-                uav_id=UAV_ID,
-                timestamp=utc_now_iso(),
+#             data = line.split(",")
 
-                lat=lat,
-                lon=lon,
-                alt=alt,
-            )
+#             lat = float(data[3])
+#             lon = float(data[4])
+#             alt = float(data[5])
 
-    except Exception:
-        return None
+#             return TelemetryData(
+#                 uav_id=UAV_ID,
+#                 timestamp=utc_now_iso(),
 
-    return None
+#                 lat=lat,
+#                 lon=lon,
+#                 alt=alt,
+#             )
+
+#     except Exception:
+#         return None
+
+#     return None
 
 
 def telemetry_worker() -> None:
@@ -381,17 +495,8 @@ async def get_telemetry():
         "alt": 0.0,
     }
 
-
-@app.on_event("startup")
-async def startup_event():
-    start()
-    thread = threading.Thread( target=telemetry_worker, daemon=True, )
-    thread.start()
-
-
-
 @app.post("/mission")
-async def upload_mission(mission: MissionRequest):
+async def upload_mission(mission: RouteV1):
 
     global LAST_ROUTE_ID
     global ROUTE_IN_PROGRESS
@@ -413,11 +518,41 @@ async def upload_mission(mission: MissionRequest):
         return {
             "ok": False,
             "route_id": mission.route_id,
-            "status": "failed"
+            "status": "failed",
         }
 
     return {
         "ok": True,
         "route_id": mission.route_id,
-        "status": "uploaded"
+        "status": "uploaded",
     }
+
+@app.post("/command")
+async def receive_command(command: CommandV1):
+
+    if TYPE_IS_UAV is False:
+        return {"ok": False, "error": "MAVLink not available"}
+
+    if MAVLINK_CONNECTION is None:
+        return {"ok": False, "error": "no connection"}
+
+    success = send_command(command)
+
+    if not success:
+        return {
+            "ok": False,
+            "command_id": command.command_id,
+            "status": "failed",
+        }
+
+    return {
+        "ok": True,
+        "command_id": command.command_id,
+        "status": "sent",
+    }
+
+@app.on_event("startup")
+async def startup_event():
+    start()
+    thread = threading.Thread( target=telemetry_worker, daemon=True, )
+    thread.start()

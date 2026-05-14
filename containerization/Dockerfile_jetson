@@ -23,4 +23,4 @@ RUN grep -vE '^(torch|torchvision|PyYAML|Pygments|opencv-python)[=<>]' requireme
 
 COPY ../. .
 
-CMD ["python", "-m", "fire_uav.main"]
+CMD ["python3", "-m", "fire_uav.main"]

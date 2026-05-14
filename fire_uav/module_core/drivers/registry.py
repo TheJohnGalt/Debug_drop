@@ -7,6 +7,7 @@ from fire_uav.module_core.adapters import (
     MavlinkUavAdapter,
     StubUavAdapter,
     UnrealSimUavAdapter,
+    ModuleAdapter,
 )
 from fire_uav.module_core.interfaces.uav_driver import UavDriver
 
@@ -39,6 +40,9 @@ def create_driver(cfg, *, logger=None) -> UavDriver:
         )
     if driver_type in ("custom", "client_bridge"):
         return CustomSdkUavAdapter(cfg.custom_sdk_config, logger=logger)
+    if driver_type in ("module_adapter"):
+        return ModuleAdapter(telemetry_base_url="http://127.0.0.1:8000", logger=logger)
+
     raise ValueError(f"Unknown driver_type: {driver_type}")
 
 

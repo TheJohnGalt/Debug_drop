@@ -12,6 +12,7 @@ from fire_uav.module_core.drivers.registry import resolve_driver_type
 from fire_uav.services.bus import Event, bus
 from fire_uav.services.components.camera import CameraThread
 from fire_uav.services.components.detect import DetectThread
+from fire_uav.services.components.relay_component import RelayThread
 from fire_uav.services.lifecycle.manager import LifecycleManager
 
 _log = logging.getLogger(__name__)
@@ -48,18 +49,26 @@ def init_module_core(*, fps: int = 30) -> None:
             in_q=deps.frame_queue,
             out_q=deps.dets_queue,
         )
+        deps.relay_factory = lambda: RelayThread(
+            host=settings.ground_station_host,
+            port=settings.ground_station_port
+        )
     else:
         deps.camera_factory = None
         deps.detect_factory = None
+        deps.relay_factory = None
+
+
 
         _log.warning("Camera not found — GUI will start without live feed")
 
-    print(deps.camera_factory, deps.camera_factory)
+    print(deps.camera_factory, deps.camera_factory, deps.relay_factory)
 
     deps.lifecycle_manager = LifecycleManager()
     detect_thread = deps.get_detector()
     camera_thread = deps.get_camera()
-    deps.lifecycle_manager.register(detect_thread, camera_thread)
+    relay_factory = deps.get_realy()
+    deps.lifecycle_manager.register(detect_thread, camera_thread, relay_factory)
 
     bus.subscribe(Event.APP_START, lambda *_: deps.get_lifecycle().start_all())
     bus.subscribe(Event.APP_STOP, lambda *_: deps.get_lifecycle().stop_all())

@@ -16,6 +16,9 @@ def _is_module_role() -> bool:
     role = getattr(load_settings(), "role", "ground")
     return str(role).lower().startswith("module")
 
+def _start_relay():
+    thread = threading.Thread(target=main_relay)
+    thread.start()
 
 def main() -> None:  # noqa: D401
     if _is_module_role():

@@ -25,7 +25,6 @@ from fire_uav.module_core.route.python_planner import PythonRoutePlanner
 from fire_uav.module_core.schema import Route, TelemetrySample, Waypoint
 from fire_uav.services.bus import Event, bus
 from fire_uav.services.visualizer_adapter import VisualizerAdapter
-from fire_uav.services.telemetry.transmitter import Transmitter
 from fire_uav.services.telemetry_ingest import TelemetryIngestContext, ingest_telemetry
 from fire_uav.utils.time import utc_now
 
@@ -108,21 +107,6 @@ class _ModuleTelemetryConsumer(IUavTelemetryConsumer):
         bus.emit(Event.BATTERY_CRITICAL, {"battery_percent": battery_percent})
 
         await self.adapter.push_route(return_route)
-
-
-def _make_transmitter() -> Transmitter | None:
-    cfg = load_module_settings()
-    if not cfg.ground_station_enabled:
-        return None
-    try:
-        return Transmitter(
-            host=cfg.ground_station_host,
-            port=cfg.ground_station_port,
-            udp=cfg.ground_station_udp,
-        )
-    except Exception:  # noqa: BLE001
-        log.exception("Failed to connect transmitter to ground station")
-        return None
 
 
 def _build_adapter(cfg) -> IUavAdapter:
@@ -236,7 +220,6 @@ async def _run() -> None:
     planner = PythonRoutePlanner(energy_model=energy_model, settings=cfg)
     projector = get_geo_projector(cfg)
     visualizer = VisualizerAdapter(cfg)
-    transmitter = _make_transmitter()
     aggregator = DetectionAggregator(
         window=cfg.agg_window,
         votes_required=cfg.agg_votes_required,
@@ -248,7 +231,6 @@ async def _run() -> None:
     pipeline = DetectionPipeline(
         aggregator=aggregator,
         projector=projector,
-        transmitter=transmitter,
         visualizer_adapter=visualizer if getattr(cfg, "visualizer_enabled", False) else None,
         loop=loop,
         detection_callback=health_state.update_detection,
@@ -318,11 +300,6 @@ async def _run() -> None:
             await adapter.stop()
         except Exception:  # noqa: BLE001
             log.exception("Failed to stop UAV adapter cleanly")
-        if transmitter:
-            try:
-                transmitter.close()
-            except Exception:  # noqa: BLE001
-                log.exception("Failed to close transmitter socket")
         if getattr(cfg, "visualizer_enabled", False) and visualizer:
             try:
                 await visualizer.aclose()

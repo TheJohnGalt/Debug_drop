@@ -1,7 +1,7 @@
 {
   "role": "module",
   "uav_backend": "mavlink",
-  "driver_type": "stub",
+  "driver_type": "module_adapter",
   "mavlink_connection_string": "udp:192.168.0.80:14550",
   "unreal_base_url": "http://127.0.0.1:9000",
   "unreal_video_mode": "jpeg_snapshots",
@@ -65,8 +65,8 @@
     1
   ],
   "ground_station_enabled": true,
-  "ground_station_host": "127.0.0.1",
-  "ground_station_port": 5000,
+  "ground_station_host": "0.0.0.0",
+  "ground_station_port": 6000,
   "ground_station_udp": false,
   "agg_window": 3,
   "agg_votes_required": 1,

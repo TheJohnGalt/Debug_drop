@@ -9,6 +9,7 @@ from typing import Callable, List, Sequence, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field
 
+import httpx
 from fire_uav.config import settings
 from fire_uav.domain.video.camera import CameraParams
 from fire_uav.module_core.detections.aggregator import DetectionAggregator, DetectionEvent
@@ -58,7 +59,6 @@ class DetectionPipeline:
         *,
         aggregator: DetectionAggregator | None = None,
         projector: IGeoProjector | None = None,
-        transmitter: Transmitter | None = None,
         camera_params: CameraParams | None = None,
         visualizer_adapter=None,
         loop=None,
@@ -80,7 +80,6 @@ class DetectionPipeline:
                 self.projector.set_camera_params(camera_params)  # type: ignore[attr-defined]
             except Exception:  # noqa: BLE001
                 logger.debug("Failed to apply explicit camera params to projector", exc_info=True)
-        self.transmitter = transmitter
         self._smoother = build_smoother(settings)
         self._registry = ObjectRegistry(
             spatial_match_radius_m=float(
@@ -203,28 +202,31 @@ class DetectionPipeline:
 
     # ------------------------------------------------------------------ #
     def _transmit(self, detections: Sequence[GeoDetection]) -> None:
-        if not self.transmitter or not detections:
+        # to do - заменить прямой вызов на класс-посредник для отправки
+        RELAY_DETECTION_URL = "http://127.0.0.1:6000/link/v1/send_detection"
+        if not detections:
             return
         for det in detections:
             payload = {
+                "protocol_version": 1,
+                "uav_id": str(getattr(settings, "uav_id", None) or "uav"),
                 "class_id": det.class_id,
                 "confidence": det.confidence,
                 "lat": det.lat,
                 "lon": det.lon,
                 "timestamp": det.timestamp.isoformat(),
-                "frame": det.frame_id,
+                "frame_id": det.frame_id,
+                "track_id": det.track_id,
+                "object_id": det.object_id,
+                "alt": det.alt,
             }
             try:
-                self.transmitter.send(payload)
-                logger.info(
-                    "Sent to ground station: cls=%s conf=%.2f lat=%.6f lon=%.6f",
-                    det.class_id,
-                    det.confidence,
-                    det.lat,
-                    det.lon,
-                )
-            except Exception:  # noqa: BLE001
-                logger.exception("Failed to transmit detection")
+                response = httpx.post(RELAY_DETECTION_URL, json=payload, timeout=2.0)
+                response.raise_for_status()
+                logger.info(...)
+            except Exception:
+                logger.exception("Failed to queue detection via relay")
+
 
     def _publish_visualizer(self, det: GeoDetection) -> None:
         if not self._visualizer:
