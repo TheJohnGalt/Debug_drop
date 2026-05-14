@@ -153,7 +153,6 @@ def send_command(msg: CommandV1) -> dict[str, object]:
 @app.post("/link/v1/receive_command")
 def receive_command(msg: CommandV1) -> dict[str, str]:
     bus.emit("command_received", msg.model_dump(mode="json"))
-    print("receive_command")
     return {"status": "ACK"}
 
 @app.get("/link/v1/health")
