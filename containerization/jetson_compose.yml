@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   client:
-#    depends_on:
-#     - telemetry
+    depends_on:
+       - telemetry
     image: revchenkov/bpla_fire_smoke_human:latest
     build:
       context: ../
@@ -34,9 +34,9 @@ services:
       CONFIG_PATH: /app/telemetry/telemetry_config.json
       HOST: 0.0.0.0
       PORT: 8000
-#    devices:
+    devices:
 #      - /dev/ttyUSB2:/dev/ttyUSB2
-#      - /dev/ttyTHS1:/dev/ttyTHS1
+      - /dev/ttyTHS1:/dev/ttyTHS1
     group_add:
       - dialout
     restart: unless-stopped

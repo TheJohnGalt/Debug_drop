@@ -1,5 +1,5 @@
 {
-  "mission_timeout_sec":5,
+  "mission_timeout_sec": 30,
 
   "uav_id": "uav-1",
 
@@ -8,7 +8,7 @@
 
   "modem_device": "/dev/ttyUSB2",
   "modem_baudrate": 115200,
-  "mavlink_position_hz": 10,
-  "mavlink_attitude_hz": 20,
+  "mavlink_position_hz": 5,
+  "mavlink_attitude_hz": 5,
   "mavlink_battery_hz": 1
 }

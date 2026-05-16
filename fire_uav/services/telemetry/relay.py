@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from fire_uav.module_core.contract.v1 import CommandV1, RouteV1
 from fire_uav.services.bus import bus
 
-# to do: доделать релей и слить втеки с наземной станцией !!!
+# to do: слить втеки с наземной станцией !
 
 LOCAL_HOST = "0.0.0.0"
 LOCAL_PORT = 6000

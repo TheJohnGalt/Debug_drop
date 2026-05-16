@@ -113,7 +113,6 @@ def start() -> None:
     global MODEM_SERIAL
 
     TYPE_IS_UAV = resolve_telemetry_type()
-
     if TYPE_IS_UAV:
         MAVLINK_CONNECTION = mavutil.mavlink_connection(
             MAVLINK_DEVICE,
@@ -169,9 +168,6 @@ def start() -> None:
 
 
 def send_mission(waypoints) -> bool:
-    """
-    Отправка миссии в автопилот через MAVLink.
-    """
     global MAVLINK_CONNECTION
 
     if MAVLINK_CONNECTION is None:
@@ -180,22 +176,40 @@ def send_mission(waypoints) -> bool:
     try:
         count = len(waypoints)
 
+        MAVLINK_CONNECTION.waypoint_clear_all_send()
+
         MAVLINK_CONNECTION.mav.mission_count_send(
             MAVLINK_CONNECTION.target_system,
             MAVLINK_CONNECTION.target_component,
             count,
-            0,
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
         )
 
-        for seq, wp in enumerate(waypoints):
+        while True:
+            req = MAVLINK_CONNECTION.recv_match(
+                type=["MISSION_REQUEST_INT", "MISSION_REQUEST"],
+                blocking=True,
+                timeout=MISSION_TIMEOUT_SEC,
+            )
+
+            if req is None:
+                return False
+
+            seq = req.seq
+
+            if seq >= count:
+                return False
+
+            wp = waypoints[seq]
+
             MAVLINK_CONNECTION.mav.mission_item_int_send(
                 MAVLINK_CONNECTION.target_system,
                 MAVLINK_CONNECTION.target_component,
                 seq,
-                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
                 mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
                 0,
-                1,
+                1 if seq == 0 else 0,
                 0,
                 0,
                 0,
@@ -203,7 +217,11 @@ def send_mission(waypoints) -> bool:
                 int(wp.lat * 1e7),
                 int(wp.lon * 1e7),
                 float(wp.alt),
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             )
+
+            if seq == count - 1:
+                break
 
         ack = MAVLINK_CONNECTION.recv_match(
             type="MISSION_ACK",
@@ -211,9 +229,9 @@ def send_mission(waypoints) -> bool:
             timeout=MISSION_TIMEOUT_SEC,
         )
 
-        return ack is not None
+        return ack is not None and ack.type == mavutil.mavlink.MAV_MISSION_ACCEPTED
 
-    except Exception:
+    except Exception as e:
         return False
 
 def send_command(command: CommandV1) -> bool:
@@ -293,8 +311,11 @@ def send_command(command: CommandV1) -> bool:
             timeout=MISSION_TIMEOUT_SEC,
         )
 
-        return ack is not None
-
+        return (
+            ack is not None
+            and ack.command == mav_cmd
+            and ack.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
     except Exception:
         return False
 
@@ -316,7 +337,6 @@ def resolve_telemetry_type() -> bool:
 
     except Exception:
         pass
-
     return False
 
 
@@ -343,6 +363,7 @@ def pull_uav_telemetry() -> Optional[TelemetryData]:
     battery = None
 
     try:
+
         msg = MAVLINK_CONNECTION.recv_match(
             type="GLOBAL_POSITION_INT",
             blocking=True,
@@ -363,7 +384,7 @@ def pull_uav_telemetry() -> Optional[TelemetryData]:
 
         attitude = MAVLINK_CONNECTION.recv_match(
             type="ATTITUDE",
-            blocking=False,
+            blocking=True,
         )
 
         if attitude:

@@ -58,15 +58,15 @@
   "critical_battery_percent": 10.0,
   "battery_wh": 77.0,
   "no_fly_geojson": "data/no_fly_zones.geojson",
-  "yolo_model": "data/models/best_yolo11.rknn",
+  "yolo_model": "data/models/best_yolo11.pt",
   "yolo_conf": 0.15,
   "yolo_classes": [
     0,
     1
   ],
   "ground_station_enabled": true,
-  "ground_station_host": "192.168.0.24",
-  "ground_station_port": 5000,
+  "ground_station_host": "0.0.0.0",
+  "ground_station_port": 6000,
   "ground_station_udp": false,
   "agg_window": 3,
   "agg_votes_required": 1,
