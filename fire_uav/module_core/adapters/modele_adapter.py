@@ -79,8 +79,36 @@ class ModuleAdapter(IUavAdapter):
         self.log.info("ModuleAdapter stopped")
 
     async def push_route(self, route: Route) -> None:
+        await self.send_route(route)
+
+    async def send_route(self, route: Route | RouteV1) -> None:
+        if isinstance(route, RouteV1):
+            await self.send_route_v1(route)
+            return
+
         route_payload = route.model_dump(mode="json")
-        await self._post_json("/mission", route_payload)
+        route_v1 = RouteV1(
+            protocol_version=1,
+            uav_id=self.uav_id,
+            route_id=f"route-{uuid4()}",
+            mode="mission",
+            created_at=utc_now(),
+            waypoints=[
+                {
+                    "lat": wp["lat"],
+                    "lon": wp["lon"],
+                    "alt": wp["alt"],
+                    "speed_mps": None,
+                    "loiter_radius_m": None,
+                    "action": None,
+                }
+                for wp in route_payload.get("waypoints", [])
+            ],
+        )
+        await self.send_route_v1(route_v1)
+
+    async def send_route_v1(self, route: RouteV1) -> None:
+        await self._post_json("/mission", route.model_dump(mode="json"))
 
     async def send_simple_command(
         self,
@@ -118,12 +146,11 @@ class ModuleAdapter(IUavAdapter):
                     yaw=data.get("yaw", 0.0),
                     pitch=data.get("pitch", 0.0),
                     roll=data.get("roll", 0.0),
-                    battery=battery_fraction if battery_fraction is not None else 1.0,  # Дефолт 1.0
+                    battery=battery_fraction if battery_fraction is not None else 1.0,
                     battery_percent=battery_percent,
                     timestamp=utc_now(),
                     source="telemetry_api",
                 )
-
 
                 if self._telemetry_callback is not None:
                     await self._telemetry_callback.on_telemetry(sample)
@@ -140,8 +167,14 @@ class ModuleAdapter(IUavAdapter):
         if self._loop is None:
             return
 
+        try:
+            route = RouteV1(**payload)
+        except Exception:
+            self.log.exception("Invalid RouteV1 payload received from route_sent event")
+            return
+
         future = asyncio.run_coroutine_threadsafe(
-            self._post_json("/mission", payload),
+            self.send_route_v1(route),
             self._loop,
         )
 

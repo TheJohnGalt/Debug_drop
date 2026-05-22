@@ -73,7 +73,7 @@ _sender_threads_started = False
 def _post_json(path: str, msg: BaseModel) -> bool:
     url = f"{REMOTE_BASE_URL.rstrip('/')}{path}"
     try:
-        with httpx.Client(timeout=REQUEST_TIMEOUT_S) as client:
+        with httpx.Client(timeout=REQUEST_TIMEOUT_S, trust_env=False) as client:
             resp = client.post(url, json=msg.model_dump(mode="json"))
             resp.raise_for_status()
         return True
@@ -140,6 +140,7 @@ def send_route(msg: RouteV1) -> dict[str, object]:
 
 @app.post("/link/v1/receive_route")
 def receive_route(msg: RouteV1) -> dict[str, str]:
+    print("[relay-debug] emitting route_sent", flush=True)
     bus.emit("route_sent", msg.model_dump(mode="json"))
     return {"status": "ACK"}
 
